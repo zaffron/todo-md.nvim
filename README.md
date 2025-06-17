@@ -11,6 +11,8 @@ A lightweight, floating window todo plugin for Neovim that manages markdown-base
 - **Floating Window Interface** - Opens todos in a beautiful floating window that doesn't disrupt your workflow
 - **Dual Display Modes** - Choose between floating window or regular buffer
 - **Smart Todo Creation** - Press Enter in insert mode to auto-create new todo checkboxes with proper indentation
+- **Priority Syntax Highlighting** - Visual highlighting for `[HIGH]`, `[MEDIUM]`, `[LOW]` priority tags and completed tasks
+- **Quick Date Insertion** - Fast insertion of today's date, tomorrow's date, or full date with day name
 - **Custom Window Width** - Configure floating window width to your preference
 - **Auto-Sorting** - Automatically sorts todos with incomplete items first
 - **Bulk Operations** - Mark all todos as done/undone, clear completed items
@@ -43,6 +45,9 @@ return {
         clear_todos = "<leader>tc",
         mark_all_done = "<leader>tD",
         mark_all_undone = "<leader>tU",
+        insert_today = "<leader>tdt",
+        insert_tomorrow = "<leader>tdm",
+        insert_full_date = "<leader>tdf",
       },
     },
     config = function(_, opts)
@@ -58,6 +63,9 @@ return {
       { "<leader>tc", desc = "Clear Todos" },
       { "<leader>tD", desc = "Mark All Done" },
       { "<leader>tU", desc = "Mark All Undone" },
+      { "<leader>tdt", desc = "Insert Today's Date" },
+      { "<leader>tdm", desc = "Insert Tomorrow's Date" },
+      { "<leader>tdf", desc = "Insert Full Date" },
     },
   },
 }
@@ -72,34 +80,40 @@ return {
 
 ### Default Keybindings
 
-| Key          | Action               | Description                                   |
-| ------------ | -------------------- | --------------------------------------------- |
-| `<leader>to` | Open Todo (Floating) | Open todo list in floating window             |
-| `<leader>tO` | Open Todo (Buffer)   | Open todo list in regular buffer              |
-| `<leader>ta` | Add Todo Item        | Add new todo via input prompt                 |
-| `<leader>tt` | Toggle Todo Item     | Toggle completion status of current line      |
-| `<leader>td` | Delete Todo Item     | Delete todo item on current line              |
-| `<leader>ts` | Sort Todos           | Manually sort todos by completion status      |
-| `<leader>tc` | Clear Todos          | Clear todos with options (all/completed only) |
-| `<leader>tD` | Mark All Done        | Mark all todos as completed                   |
-| `<leader>tU` | Mark All Undone      | Mark all todos as incomplete                  |
+| Key           | Action                 | Description                                   |
+| ------------- | ---------------------- | --------------------------------------------- |
+| `<leader>to`  | Open Todo (Floating)   | Open todo list in floating window             |
+| `<leader>tO`  | Open Todo (Buffer)     | Open todo list in regular buffer              |
+| `<leader>ta`  | Add Todo Item          | Add new todo via input prompt                 |
+| `<leader>tt`  | Toggle Todo Item       | Toggle completion status of current line      |
+| `<leader>td`  | Delete Todo Item       | Delete todo item on current line              |
+| `<leader>ts`  | Sort Todos             | Manually sort todos by completion status      |
+| `<leader>tc`  | Clear Todos            | Clear todos with options (all/completed only) |
+| `<leader>tD`  | Mark All Done          | Mark all todos as completed                   |
+| `<leader>tU`  | Mark All Undone        | Mark all todos as incomplete                  |
+| `<leader>tdt` | Insert Today's Date    | Insert current date at cursor position        |
+| `<leader>tdm` | Insert Tomorrow's Date | Insert tomorrow's date at cursor position     |
+| `<leader>tdf` | Insert Full Date       | Insert full date with day name                |
 
 ### Commands
 
 For users who prefer commands over keybindings, all functions are available as Neovim commands:
 
-| Command              | Equivalent Key | Description                              |
-| -------------------- | -------------- | ---------------------------------------- |
-| `:TodoOpen`          | `<leader>to`   | Open todo list in floating window        |
-| `:TodoBuffer`        | `<leader>tO`   | Open todo list in regular buffer         |
-| `:TodoAdd`           | `<leader>ta`   | Add new todo item via input prompt       |
-| `:TodoToggle`        | `<leader>tt`   | Toggle completion status of current line |
-| `:TodoDelete`        | `<leader>td`   | Delete todo item on current line         |
-| `:TodoSort`          | `<leader>ts`   | Sort todos by completion status          |
-| `:TodoClear`         | `<leader>tc`   | Clear todos with interactive options     |
-| `:TodoMarkAllDone`   | `<leader>tD`   | Mark all todos as completed              |
-| `:TodoMarkAllUndone` | `<leader>tU`   | Mark all todos as incomplete             |
-| `:TodoClose`         | `q` or `Esc`   | Close floating todo window               |
+| Command               | Equivalent Key | Description                               |
+| --------------------- | -------------- | ----------------------------------------- |
+| `:TodoOpen`           | `<leader>to`   | Open todo list in floating window         |
+| `:TodoBuffer`         | `<leader>tO`   | Open todo list in regular buffer          |
+| `:TodoAdd`            | `<leader>ta`   | Add new todo item via input prompt        |
+| `:TodoToggle`         | `<leader>tt`   | Toggle completion status of current line  |
+| `:TodoDelete`         | `<leader>td`   | Delete todo item on current line          |
+| `:TodoSort`           | `<leader>ts`   | Sort todos by completion status           |
+| `:TodoClear`          | `<leader>tc`   | Clear todos with interactive options      |
+| `:TodoMarkAllDone`    | `<leader>tD`   | Mark all todos as completed               |
+| `:TodoMarkAllUndone`  | `<leader>tU`   | Mark all todos as incomplete              |
+| `:TodoInsertToday`    | `<leader>tdt`  | Insert today's date at cursor position    |
+| `:TodoInsertTomorrow` | `<leader>tdm`  | Insert tomorrow's date at cursor position |
+| `:TodoInsertFullDate` | `<leader>tdf`  | Insert full date with day name            |
+| `:TodoClose`          | `q` or `Esc`   | Close floating todo window                |
 
 **Note:** Commands work the same as keybindings. You can use either method or mix both approaches based on your preference.
 
@@ -109,6 +123,9 @@ When in the floating window:
 
 - `q`, `Esc`, or `ZZ` - Close and save
 - `Enter` (in insert mode) - Auto-create new todo checkbox with same indentation
+- `Ctrl+d t` (in insert mode) - Insert today's date
+- `Ctrl+d m` (in insert mode) - Insert tomorrow's date
+- `Ctrl+d f` (in insert mode) - Insert full date with day name
 - Normal vim editing commands work
 - Auto-saves on `:w` (write)
 
@@ -117,9 +134,10 @@ When in the floating window:
 1. **Quick Todo Entry**: Press `<leader>ta` or use `:TodoAdd` anywhere to add a new todo
 2. **Review & Edit**: Press `<leader>to` or use `:TodoOpen` to open floating todo window
 3. **Fast Todo Creation**: In floating window insert mode, press `Enter` on any todo line to auto-create new checkboxes
-4. **Toggle Completion**: Navigate to any todo line and press `<leader>tt` or use `:TodoToggle`
-5. **Bulk Operations**: Use `<leader>tD` (`:TodoMarkAllDone`) to mark all as done, `<leader>tc` (`:TodoClear`) to clear completed
-6. **Organization**: `<leader>ts` (`:TodoSort`) to sort todos, or enable `auto_sort` for automatic sorting
+4. **Priority & Dates**: Add `[HIGH]`, `[MEDIUM]`, `[LOW]` tags for visual highlighting, use `<leader>tdt` to insert dates
+5. **Toggle Completion**: Navigate to any todo line and press `<leader>tt` or use `:TodoToggle`
+6. **Bulk Operations**: Use `<leader>tD` (`:TodoMarkAllDone`) to mark all as done, `<leader>tc` (`:TodoClear`) to clear completed
+7. **Organization**: `<leader>ts` (`:TodoSort`) to sort todos, or enable `auto_sort` for automatic sorting
 
 ## Configuration
 
@@ -168,7 +186,10 @@ The plugin uses standard markdown checkbox format:
 
 - [ ] Incomplete todo item
 - [x] Completed todo item
-- [ ] Another incomplete item
+- [ ] [HIGH] Important task with high priority
+- [ ] [MEDIUM] Medium priority task 2024-06-17
+- [ ] [LOW] Low priority task
+- [ ] Meeting with team 2024-06-18 Tuesday
 
 ## Work Tasks
 
@@ -177,6 +198,37 @@ The plugin uses standard markdown checkbox format:
 ```
 
 ## Advanced Features
+
+### Priority Highlighting
+
+The plugin automatically highlights priority tags in your todos:
+
+- **`[HIGH]`** - Red color with bold text for urgent tasks
+- **`[MEDIUM]`** - Orange/yellow color with bold text for important tasks
+- **`[LOW]`** - Blue color with bold text for less urgent tasks
+- **Completed tasks** - Gray with strikethrough for finished items
+
+Syntax highlighting updates in real-time as you type, making it easy to visually scan your todo priorities.
+
+### Quick Date Insertion
+
+Insert dates quickly using these methods:
+
+**Global keybindings** (work anywhere):
+
+- `<leader>tdt` - Insert today's date (e.g., `2024-06-17`)
+- `<leader>tdm` - Insert tomorrow's date (e.g., `2024-06-18`)
+- `<leader>tdf` - Insert full date with day name (e.g., `2024-06-17 Monday`)
+
+**Floating window shortcuts** (insert mode only):
+
+- `Ctrl+d t` - Insert today's date
+- `Ctrl+d m` - Insert tomorrow's date
+- `Ctrl+d f` - Insert full date with day name
+
+**Commands**:
+
+- `:TodoInsertToday`, `:TodoInsertTomorrow`, `:TodoInsertFullDate`
 
 ### Auto-Sorting
 

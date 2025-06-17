@@ -83,6 +83,46 @@ local function write_todo_file(lines, should_sort)
   return true
 end
 
+local function setup_priority_highlights()
+  vim.api.nvim_set_hl(0, "TodoHighPriority", { fg = "#ff6b6b", bold = true })
+  vim.api.nvim_set_hl(0, "TodoMediumPriority", { fg = "#feca57", bold = true })
+  vim.api.nvim_set_hl(0, "TodoLowPriority", { fg = "#48cae4", bold = true })
+  vim.api.nvim_set_hl(0, "TodoCompletedTask", { fg = "#6c757d", strikethrough = true })
+end
+
+local function apply_syntax_highlighting(buf)
+  local namespace = vim.api.nvim_create_namespace("TodoMdPriorities")
+
+  -- Clear existing highlights
+  vim.api.nvim_buf_clear_namespace(buf, namespace, 0, -1)
+
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  for i, line in ipairs(lines) do
+    local line_num = i - 1 -- 0-indexed
+
+    -- Highlight completed tasks
+    if line:match("^%s*- %[x%]") then
+      vim.api.nvim_buf_add_highlight(buf, namespace, "TodoCompletedTask", line_num, 0, -1)
+    end
+
+    -- Highlight priority tags
+    local high_start, high_end = line:find("%[HIGH%]")
+    if high_start then
+      vim.api.nvim_buf_add_highlight(buf, namespace, "TodoHighPriority", line_num, high_start - 1, high_end)
+    end
+
+    local medium_start, medium_end = line:find("%[MEDIUM%]")
+    if medium_start then
+      vim.api.nvim_buf_add_highlight(buf, namespace, "TodoMediumPriority", line_num, medium_start - 1, medium_end)
+    end
+
+    local low_start, low_end = line:find("%[LOW%]")
+    if low_start then
+      vim.api.nvim_buf_add_highlight(buf, namespace, "TodoLowPriority", line_num, low_start - 1, low_end)
+    end
+  end
+end
+
 local function create_floating_window()
   local width = M.config.floating_width or math.ceil(vim.o.columns * 0.8)
   local height = math.ceil(vim.o.lines * 0.8)
@@ -118,6 +158,10 @@ local function create_floating_window()
 
   M.floating_win = vim.api.nvim_open_win(M.floating_buf, true, opts)
 
+  -- Setup and apply syntax highlighting
+  setup_priority_highlights()
+  apply_syntax_highlighting(M.floating_buf)
+
   vim.api.nvim_buf_set_keymap(
     M.floating_buf,
     "n",
@@ -147,6 +191,29 @@ local function create_floating_window()
     { noremap = true, silent = true }
   )
 
+  -- Date insertion keybindings
+  vim.api.nvim_buf_set_keymap(
+    M.floating_buf,
+    "i",
+    "<C-d>t",
+    "<cmd>lua require('zaffron.todo-md').insert_date('today')<CR>",
+    { noremap = true, silent = true }
+  )
+  vim.api.nvim_buf_set_keymap(
+    M.floating_buf,
+    "i",
+    "<C-d>m",
+    "<cmd>lua require('zaffron.todo-md').insert_date('tomorrow')<CR>",
+    { noremap = true, silent = true }
+  )
+  vim.api.nvim_buf_set_keymap(
+    M.floating_buf,
+    "i",
+    "<C-d>f",
+    "<cmd>lua require('zaffron.todo-md').insert_date('full')<CR>",
+    { noremap = true, silent = true }
+  )
+
   local group = vim.api.nvim_create_augroup("TodoMdFloating", { clear = false })
   vim.api.nvim_create_autocmd("BufWritePost", {
     group = group,
@@ -154,6 +221,15 @@ local function create_floating_window()
     callback = function()
       local buf_lines = vim.api.nvim_buf_get_lines(M.floating_buf, 0, -1, false)
       write_todo_file(buf_lines)
+    end,
+  })
+
+  -- Auto-refresh syntax highlighting on buffer changes
+  vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
+    group = group,
+    buffer = M.floating_buf,
+    callback = function()
+      apply_syntax_highlighting(M.floating_buf)
     end,
   })
 end
@@ -176,29 +252,70 @@ function M.handle_enter_insert()
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
   local row = cursor_pos[1]
   local col = cursor_pos[2]
-  
+
   -- Check if current line is a todo item
   if current_line:match("^%s*- %[[ x]%]") then
     -- Get the indentation of the current line
     local indent = current_line:match("^(%s*)")
     -- Create new todo checkbox with same indentation
     local new_todo = indent .. "- [ ] "
-    
+
     -- Insert new line and the new todo
-    vim.api.nvim_put({""}, "l", true, true)
+    vim.api.nvim_put({ "" }, "l", true, true)
     vim.api.nvim_set_current_line(new_todo)
-    
+
     -- Position cursor at the end of the new todo line
-    vim.api.nvim_win_set_cursor(0, {row + 1, #new_todo})
-    
+    vim.api.nvim_win_set_cursor(0, { row + 1, #new_todo })
+
     -- Enter insert mode at the end
     vim.cmd("startinsert!")
   else
     -- Default behavior: just insert a new line
-    vim.api.nvim_put({""}, "l", true, true)
-    vim.api.nvim_win_set_cursor(0, {row + 1, 0})
+    vim.api.nvim_put({ "" }, "l", true, true)
+    vim.api.nvim_win_set_cursor(0, { row + 1, 0 })
     vim.cmd("startinsert!")
   end
+end
+
+function M.insert_date(format_type)
+  local cursor_pos = vim.api.nvim_win_get_cursor(0)
+  local row, col = cursor_pos[1], cursor_pos[2]
+  local current_line = vim.api.nvim_get_current_line()
+
+  local date_str
+  if format_type == "today" then
+    date_str = os.date("%Y-%m-%d")
+  elseif format_type == "tomorrow" then
+    date_str = os.date("%Y-%m-%d", os.time() + 24 * 60 * 60)
+  elseif format_type == "full" then
+    date_str = os.date("%Y-%m-%d %A")
+  else
+    date_str = os.date("%Y-%m-%d")
+  end
+
+  -- Insert date at cursor position
+  local before = current_line:sub(1, col)
+  local after = current_line:sub(col + 1)
+  local new_line = before .. date_str .. after
+
+  vim.api.nvim_set_current_line(new_line)
+
+  -- Position cursor after the inserted date
+  vim.api.nvim_win_set_cursor(0, { row, col + #date_str })
+
+  vim.notify("Inserted date: " .. date_str, vim.log.levels.INFO)
+end
+
+local function insert_today()
+  M.insert_date("today")
+end
+
+local function insert_tomorrow()
+  M.insert_date("tomorrow")
+end
+
+local function insert_full_date()
+  M.insert_date("full")
 end
 
 function M.close_floating_todo()
@@ -353,6 +470,9 @@ function M.setup(opts)
       clear_todos = "<leader>tc",
       mark_all_done = "<leader>tD",
       mark_all_undone = "<leader>tU",
+      insert_today = "<leader>tdt",
+      insert_tomorrow = "<leader>tdm",
+      insert_full_date = "<leader>tdf",
     },
   }, opts or {})
 
@@ -368,6 +488,9 @@ function M.setup(opts)
   vim.keymap.set("n", keybindings.clear_todos, clear_all_todos, { desc = "Clear Todos" })
   vim.keymap.set("n", keybindings.mark_all_done, mark_all_done, { desc = "Mark All Done" })
   vim.keymap.set("n", keybindings.mark_all_undone, mark_all_undone, { desc = "Mark All Undone" })
+  vim.keymap.set("n", keybindings.insert_today, insert_today, { desc = "Insert Today's Date" })
+  vim.keymap.set("n", keybindings.insert_tomorrow, insert_tomorrow, { desc = "Insert Tomorrow's Date" })
+  vim.keymap.set("n", keybindings.insert_full_date, insert_full_date, { desc = "Insert Full Date" })
 
   -- Create user commands
   vim.api.nvim_create_user_command("TodoOpen", open_todo_floating, { desc = "Open todo list in floating window" })
@@ -382,6 +505,11 @@ function M.setup(opts)
   vim.api.nvim_create_user_command("TodoClose", function()
     M.close_floating_todo()
   end, { desc = "Close floating todo window" })
+
+  -- Date insertion commands
+  vim.api.nvim_create_user_command("TodoInsertToday", insert_today, { desc = "Insert today's date" })
+  vim.api.nvim_create_user_command("TodoInsertTomorrow", insert_tomorrow, { desc = "Insert tomorrow's date" })
+  vim.api.nvim_create_user_command("TodoInsertFullDate", insert_full_date, { desc = "Insert full date with day name" })
 end
 
 return M
