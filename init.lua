@@ -312,6 +312,7 @@ function M.setup(opts)
 
   local keybindings = M.config.keybindings
 
+  -- Set up keybindings
   vim.keymap.set("n", keybindings.open_todo_floating, open_todo_floating, { desc = "Open Todo (Floating)" })
   vim.keymap.set("n", keybindings.open_todo_buffer, open_todo_file, { desc = "Open Todo (Buffer)" })
   vim.keymap.set("n", keybindings.add_todo, add_todo_item, { desc = "Add Todo Item" })
@@ -321,6 +322,20 @@ function M.setup(opts)
   vim.keymap.set("n", keybindings.clear_todos, clear_all_todos, { desc = "Clear Todos" })
   vim.keymap.set("n", keybindings.mark_all_done, mark_all_done, { desc = "Mark All Done" })
   vim.keymap.set("n", keybindings.mark_all_undone, mark_all_undone, { desc = "Mark All Undone" })
+
+  -- Create user commands
+  vim.api.nvim_create_user_command("TodoOpen", open_todo_floating, { desc = "Open todo list in floating window" })
+  vim.api.nvim_create_user_command("TodoBuffer", open_todo_file, { desc = "Open todo list in buffer" })
+  vim.api.nvim_create_user_command("TodoAdd", add_todo_item, { desc = "Add new todo item" })
+  vim.api.nvim_create_user_command("TodoToggle", toggle_todo_on_line, { desc = "Toggle todo item on current line" })
+  vim.api.nvim_create_user_command("TodoDelete", delete_todo_on_line, { desc = "Delete todo item on current line" })
+  vim.api.nvim_create_user_command("TodoSort", sort_todos_now, { desc = "Sort todos by completion status" })
+  vim.api.nvim_create_user_command("TodoClear", clear_all_todos, { desc = "Clear todos with options" })
+  vim.api.nvim_create_user_command("TodoMarkAllDone", mark_all_done, { desc = "Mark all todos as completed" })
+  vim.api.nvim_create_user_command("TodoMarkAllUndone", mark_all_undone, { desc = "Mark all todos as incomplete" })
+  vim.api.nvim_create_user_command("TodoClose", function()
+    M.close_floating_todo()
+  end, { desc = "Close floating todo window" })
 end
 
 return M
