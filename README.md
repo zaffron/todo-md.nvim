@@ -2,6 +2,10 @@
 
 A lightweight, floating window todo plugin for Neovim that manages markdown-based todo lists with advanced sorting and bulk operations.
 
+## Demo
+
+![Demo](./demo/output.gif)
+
 ## Features
 
 - **Floating Window Interface** - Opens todos in a beautiful floating window that doesn't disrupt your workflow
@@ -205,4 +209,3 @@ The clear function (`<leader>tc`) provides three options:
 ## Contributing
 
 This is a personal plugin, but feel free to fork and modify for your needs. The code is structured to be easily extensible for additional features.
-
