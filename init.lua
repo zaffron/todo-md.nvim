@@ -84,7 +84,7 @@ local function write_todo_file(lines, should_sort)
 end
 
 local function create_floating_window()
-  local width = math.ceil(vim.o.columns * 0.8)
+  local width = M.config.floating_width or math.ceil(vim.o.columns * 0.8)
   local height = math.ceil(vim.o.lines * 0.8)
 
   local col = math.ceil((vim.o.columns - width) / 2)
@@ -132,6 +132,20 @@ local function create_floating_window()
     "<cmd>lua require('zaffron.todo-md').close_floating_todo()<CR>",
     { noremap = true, silent = true }
   )
+  vim.api.nvim_buf_set_keymap(
+    M.floating_buf,
+    "n",
+    "ZZ",
+    "<cmd>lua require('zaffron.todo-md').close_floating_todo()<CR>",
+    { noremap = true, silent = true }
+  )
+  vim.api.nvim_buf_set_keymap(
+    M.floating_buf,
+    "i",
+    "<CR>",
+    "<cmd>lua require('zaffron.todo-md').handle_enter_insert()<CR>",
+    { noremap = true, silent = true }
+  )
 
   local group = vim.api.nvim_create_augroup("TodoMdFloating", { clear = false })
   vim.api.nvim_create_autocmd("BufWritePost", {
@@ -154,6 +168,36 @@ local function open_todo_floating()
     vim.api.nvim_set_current_win(M.floating_win)
   else
     create_floating_window()
+  end
+end
+
+function M.handle_enter_insert()
+  local current_line = vim.api.nvim_get_current_line()
+  local cursor_pos = vim.api.nvim_win_get_cursor(0)
+  local row = cursor_pos[1]
+  local col = cursor_pos[2]
+  
+  -- Check if current line is a todo item
+  if current_line:match("^%s*- %[[ x]%]") then
+    -- Get the indentation of the current line
+    local indent = current_line:match("^(%s*)")
+    -- Create new todo checkbox with same indentation
+    local new_todo = indent .. "- [ ] "
+    
+    -- Insert new line and the new todo
+    vim.api.nvim_put({""}, "l", true, true)
+    vim.api.nvim_set_current_line(new_todo)
+    
+    -- Position cursor at the end of the new todo line
+    vim.api.nvim_win_set_cursor(0, {row + 1, #new_todo})
+    
+    -- Enter insert mode at the end
+    vim.cmd("startinsert!")
+  else
+    -- Default behavior: just insert a new line
+    vim.api.nvim_put({""}, "l", true, true)
+    vim.api.nvim_win_set_cursor(0, {row + 1, 0})
+    vim.cmd("startinsert!")
   end
 end
 

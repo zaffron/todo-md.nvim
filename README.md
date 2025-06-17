@@ -10,9 +10,11 @@ A lightweight, floating window todo plugin for Neovim that manages markdown-base
 
 - **Floating Window Interface** - Opens todos in a beautiful floating window that doesn't disrupt your workflow
 - **Dual Display Modes** - Choose between floating window or regular buffer
+- **Smart Todo Creation** - Press Enter in insert mode to auto-create new todo checkboxes with proper indentation
+- **Custom Window Width** - Configure floating window width to your preference
 - **Auto-Sorting** - Automatically sorts todos with incomplete items first
 - **Bulk Operations** - Mark all todos as done/undone, clear completed items
-- **Smart Persistence** - Auto-saves changes when closing floating window
+- **Smart Persistence** - Auto-saves changes when closing floating window (supports `q`, `Esc`, `ZZ`)
 - **Customizable** - Configure file path and all keybindings
 - **Markdown Format** - Uses standard markdown checkbox format `- [ ]` and `- [x]`
 
@@ -30,6 +32,7 @@ return {
     opts = {
       todo_file_path = vim.fn.expand("~/todo.md"), -- Customize your todo file location
       auto_sort = true, -- Auto-sort todos by completion status
+      floating_width = 80, -- Custom width for floating window (in columns)
       keybindings = {
         open_todo_floating = "<leader>to",
         open_todo_buffer = "<leader>tO",
@@ -104,7 +107,8 @@ For users who prefer commands over keybindings, all functions are available as N
 
 When in the floating window:
 
-- `q` or `Esc` - Close and save
+- `q`, `Esc`, or `ZZ` - Close and save
+- `Enter` (in insert mode) - Auto-create new todo checkbox with same indentation
 - Normal vim editing commands work
 - Auto-saves on `:w` (write)
 
@@ -112,9 +116,10 @@ When in the floating window:
 
 1. **Quick Todo Entry**: Press `<leader>ta` or use `:TodoAdd` anywhere to add a new todo
 2. **Review & Edit**: Press `<leader>to` or use `:TodoOpen` to open floating todo window
-3. **Toggle Completion**: Navigate to any todo line and press `<leader>tt` or use `:TodoToggle`
-4. **Bulk Operations**: Use `<leader>tD` (`:TodoMarkAllDone`) to mark all as done, `<leader>tc` (`:TodoClear`) to clear completed
-5. **Organization**: `<leader>ts` (`:TodoSort`) to sort todos, or enable `auto_sort` for automatic sorting
+3. **Fast Todo Creation**: In floating window insert mode, press `Enter` on any todo line to auto-create new checkboxes
+4. **Toggle Completion**: Navigate to any todo line and press `<leader>tt` or use `:TodoToggle`
+5. **Bulk Operations**: Use `<leader>tD` (`:TodoMarkAllDone`) to mark all as done, `<leader>tc` (`:TodoClear`) to clear completed
+6. **Organization**: `<leader>ts` (`:TodoSort`) to sort todos, or enable `auto_sort` for automatic sorting
 
 ## Configuration
 
@@ -131,6 +136,14 @@ opts = {
 ```lua
 opts = {
   auto_sort = false, -- Disable automatic sorting
+}
+```
+
+### Floating Window Width
+
+```lua
+opts = {
+  floating_width = 120, -- Set custom width (default: 80% of screen width)
 }
 ```
 
