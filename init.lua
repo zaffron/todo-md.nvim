@@ -36,7 +36,7 @@ end
 local function sort_todos(lines)
   local todos = {}
   local non_todos = {}
-  
+
   for _, line in ipairs(lines) do
     if line:match("^%s*- %[[ x]%]") then
       table.insert(todos, line)
@@ -44,13 +44,13 @@ local function sort_todos(lines)
       table.insert(non_todos, line)
     end
   end
-  
+
   table.sort(todos, function(a, b)
     local a_completed = a:match("^%s*- %[x%]") ~= nil
     local b_completed = b:match("^%s*- %[x%]") ~= nil
     return not a_completed and b_completed
   end)
-  
+
   local sorted_lines = {}
   for _, line in ipairs(non_todos) do
     table.insert(sorted_lines, line)
@@ -58,16 +58,18 @@ local function sort_todos(lines)
   for _, line in ipairs(todos) do
     table.insert(sorted_lines, line)
   end
-  
+
   return sorted_lines
 end
 
 local function write_todo_file(lines, should_sort)
-  if should_sort == nil then should_sort = M.config.auto_sort end
+  if should_sort == nil then
+    should_sort = M.config.auto_sort
+  end
   if should_sort then
     lines = sort_todos(lines)
   end
-  
+
   local file = io.open(M.config.todo_file_path, "w")
   if not file then
     vim.notify("Failed to open todo file for writing", vim.log.levels.ERROR)
@@ -214,11 +216,11 @@ local function sort_todos_now()
   local lines = read_todo_file()
   local sorted_lines = sort_todos(lines)
   write_todo_file(sorted_lines, false)
-  
+
   if M.floating_win and vim.api.nvim_win_is_valid(M.floating_win) then
     vim.api.nvim_buf_set_lines(M.floating_buf, 0, -1, false, sorted_lines)
   end
-  
+
   vim.notify("Todos sorted by completion status", vim.log.levels.INFO)
 end
 
@@ -230,10 +232,10 @@ local function clear_all_todos()
       if not choice or choice == "Cancel" then
         return
       end
-      
+
       local lines = read_todo_file()
       local new_lines = {}
-      
+
       for _, line in ipairs(lines) do
         if choice == "Clear completed todos only" then
           if not line:match("^%s*- %[x%]") then
@@ -243,13 +245,13 @@ local function clear_all_todos()
           table.insert(new_lines, line)
         end
       end
-      
+
       write_todo_file(new_lines, false)
-      
+
       if M.floating_win and vim.api.nvim_win_is_valid(M.floating_win) then
         vim.api.nvim_buf_set_lines(M.floating_buf, 0, -1, false, new_lines)
       end
-      
+
       vim.notify("Todos cleared: " .. choice, vim.log.levels.INFO)
     end
   )
@@ -259,7 +261,7 @@ local function mark_all_todos(mark_as_done)
   local lines = read_todo_file()
   local new_lines = {}
   local changed_count = 0
-  
+
   for _, line in ipairs(lines) do
     if line:match("^%s*- %[ %]") and mark_as_done then
       local new_line = line:gsub("^(%s*- )%[ %]", "%1[x]")
@@ -273,14 +275,14 @@ local function mark_all_todos(mark_as_done)
       table.insert(new_lines, line)
     end
   end
-  
+
   write_todo_file(new_lines, M.config.auto_sort)
-  
+
   if M.floating_win and vim.api.nvim_win_is_valid(M.floating_win) then
     local final_lines = M.config.auto_sort and sort_todos(new_lines) or new_lines
     vim.api.nvim_buf_set_lines(M.floating_buf, 0, -1, false, final_lines)
   end
-  
+
   local status = mark_as_done and "completed" or "incomplete"
   vim.notify(string.format("Marked %d todos as %s", changed_count, status), vim.log.levels.INFO)
 end
@@ -339,4 +341,3 @@ function M.setup(opts)
 end
 
 return M
-
